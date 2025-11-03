@@ -1,6 +1,8 @@
 import math
+import re
 class Calculettefactice():
     def __init__(self):
+        self.priorites = {'(': 0,'+': 1,'-': 1,'*': 2,'/': 2,'^': 3 }
         pass
     def exposant(self,nb,expo):
         """
@@ -18,7 +20,7 @@ class Calculettefactice():
         """
         Calcule nb!
         """
-    def fibonnacci(self,nb):
+    def fibo(self,nb):
         """
         fonction fibonacci
         """
@@ -34,10 +36,22 @@ class Calculettefactice():
         """
         Approximation division à precision chiffres apres la virgule
         """
-
-
+    def conversion(self,expression):
+        """
+        Convertit une expression mathématique en une expression en Notation
+        Polonaise Inversé (NPI)
+        """
+    def calcul_en_npi(self,calculNPI):
+        """
+        Calcul un resultat à partir d'une expression en notation NPI
+        """
+    def cerveau(self,expression):
+        """
+        Fonction qui orchestre le calcul final
+        """
 class Calculs(Calculettefactice):
     def __init__(self):
+        self.priorites = {'(': 0,'+': 1,'-': 1,'*': 2,'/': 2,'^': 3 }
         pass
     def multiplication(self,nb1,nb2):
         if nb1 == 0 or nb2 == 0:
@@ -221,8 +235,90 @@ class Calculs(Calculettefactice):
         else:
             return res_final
 
+    def conversion(self, expression):
+        """
+        Transforme une expression mathématique en NPI .
+        D'après l'algo de  "Shunting-Yard".
+        """
+        file_sortie = [] #Pour les nombres
+        pile_operateurs = []
+
+        # 1. Découper l'expression en "jetons" (nombres ou opérateurs)
+        # Cette regex trouve les nombres (y compris flottants) OU les opérateurs/parenthèses
+        regex_jetons = r'(\d+(\.\d*)?|facto|exp|[\+\-\*\/\^\(\)])'
+        jetons = re.findall(regex_jetons, expression)
+
+        for jeton_tuple in jetons:
+            jeton = jeton_tuple[0]  # re.findall renvoie des tuples à cause du groupe
+
+            if jeton[0].isdigit(): # sinon on a des doublons du findall
+                file_sortie.append(float(jeton))
+
+            elif jeton == '(':
+                pile_operateurs.append(jeton)
+
+            elif jeton == ')':
+                while pile_operateurs and pile_operateurs[-1] != '(':
+                    file_sortie.append(pile_operateurs.pop())
+                pile_operateurs.pop()  #suppr la paraenthese
+
+                if pile_operateurs and pile_operateurs[-1] in ('facto', 'exp'):
+                    file_sortie.append(pile_operateurs.pop())
+            else:
+                op1 = jeton
+                # On vérifie les opérateurs (op2) déjà sur la pile
+                while pile_operateurs and self.priorites[pile_operateurs[-1]] > self.priorites[op1]:
+                    file_sortie.append(pile_operateurs.pop()) # on retire les operateurs prioritaires
+
+                pile_operateurs.append(op1)
+
+        while pile_operateurs:
+            file_sortie.append(pile_operateurs.pop())
+
+        return file_sortie
+
+    def calcul_en_npi(self, calculNPI):
+        """
+        Calcule le résultat d'une expression déjà convertie en NPI.
+        """
+        pile_calcul = []
+        for jeton in calculNPI:
+
+            if isinstance(jeton, (int, float)):
+                pile_calcul.append(jeton)
+
+            else:
+                nb2 = pile_calcul.pop()
+                nb1 = pile_calcul.pop()
+
+                res = 0.0
+                if jeton in ('facto', 'exp'):
+                    nb1 = pile_calcul.pop()
+                    if jeton == 'facto':
+                        res = self.factorielle(int(nb1))
+                    else:
+                        res = self.exp_e(nb1)
+                if jeton == '+':
+                    res = nb1 + nb2
+                elif jeton == '-':
+                    res = nb1 - nb2
+                elif jeton == '*':
+                    res = self.multiplication_flottant(nb1, nb2)
+                elif jeton == '/':
+                    res = self.division_precise(nb1, nb2)
+                elif jeton == '^':
+                    res = self.exposant(nb1, int(nb2))
+
+                pile_calcul.append(res)
+
+        return pile_calcul.pop()
+
+    def cerveau(self, expression):
+        npi = self.conversion(expression)
+        resultat = self.calcul_en_npi(npi)
+        print(f"___{expression} = {resultat}")
+
 def test():
-    print("🚀 Lancement de la batterie de tests pour la classe Calculs 🚀")
 
     # --- Test 1: multiplication (par additions) ---
     print("\n" + "="*30)
@@ -318,8 +414,45 @@ def test():
     print(f"   1 / 1000    = {c.division_precise(1, 1000)}    (Attendu: 0.0010)")
 
     print("\n" + "="*30)
-    print("🏁 Tests terminés. 🏁")
+    print("Tests  de base terminés.")
+    print("\n" + "=" * 30)
+    print("9. Tests 'cerveau' (Calculs NPI Complets)")
 
+    # Test 1: Priorité (Fonction > Multiplication > Addition)
+    print("Test 9.1 (Attendu: 58)")
+    c.cerveau("10 + facto(4) * 2")
+
+    # Test 2: Parenthèses, Exposant, puis Multiplication
+    print("Test 9.2 (Attendu: 32)")
+    c.cerveau("(5 + 3) * 2 ^ 2")
+
+    # Test 3: Fonction, Addition et Division
+    # Note : Le résultat exact dépend de votre approx. de exp_e
+    print("Test 9.3 (Attendu: ~2.5)")
+    c.cerveau("(exp(1) + 2.282) / 2")
+
+    # Test 4: Parenthèses imbriquées et associativité de l'exposant
+    print("Test 9.4 (Attendu: 2575)")
+    c.cerveau("5 * (3 + (2 ^ 3 ^ 2))")
+
+    # Test 5: Combinaison complète
+    print("Test 9.5 (Attendu: 18)")
+    c.cerveau("facto(3) + (10 - 4) * (8 / 2 ^ 2)")
+
+    # Test 6: Fonction d'une expression
+    print("Test 9.6 (Attendu: 12)")
+    c.cerveau("facto(1 + 4) / 10")
+
+    # Test 7: Associativité à gauche (test critique)
+    print("Test 9.7 (Attendu: 8)")
+    c.cerveau("10 - 4 + 2")  # Doit être (10-4)+2, pas 10-(4+2)
+
+    # Test 8: Division par zéro
+    print("Test 9.8 (Attendu: ERREUR)")
+    c.cerveau("5 / (4 - 4)")
+
+    print("\n" + "=" * 30)
+    print("Tests enfin terminés.")
 
 c = Calculs()
 test()

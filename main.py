@@ -2,7 +2,8 @@ import math
 import re
 class Calculettefactice():
     def __init__(self):
-        self.priorites = {'(': 0,'+': 1,'-': 1,'*': 2,'/': 2,'^': 3 }
+        self.priorites = {'(': 0,'+': 1,'-': 1,'*': 2,'/': 2,'^': 3,'facto': 4, 'exp': 4}
+        self.associativite = {'+': 'Gauche','-': 'Gauche','*': 'Gauche','/': 'Gauche','^': 'Droite'}
         pass
     def exposant(self,nb,expo):
         """
@@ -51,7 +52,8 @@ class Calculettefactice():
         """
 class Calculs(Calculettefactice):
     def __init__(self):
-        self.priorites = {'(': 0,'+': 1,'-': 1,'*': 2,'/': 2,'^': 3 }
+        self.priorites = {'(': 0, '+': 1, '-': 1, '*': 2, '/': 2, '^': 3, 'facto': 4, 'exp': 4}
+        self.associativite = {'+': 'Gauche','-': 'Gauche','*': 'Gauche','/': 'Gauche','^': 'Droite'}
         pass
     def multiplication(self,nb1,nb2):
         if nb1 == 0 or nb2 == 0:
@@ -95,17 +97,17 @@ class Calculs(Calculettefactice):
             raise ValueError("factorielle: nb doit etre >=0")
         res=1
         for i in range(1,nb+1):
-            res=Calculs.multiplication(self,res,i)
+            res=self.multiplication(res,i)
         return res
     def fibo(self,n):
         if n <= 1:
             return n
-        return Calculs.fibo(self,n - 1) + Calculs.fibo(self,n - 2)
+        return self.fibo(n - 1) + self.fibo(n-2)
     def exposant(self,nb,expo):
         if not isinstance(expo,int):
             raise ValueError("exposant: un exposant doit etre un entier")
         if expo < 0:
-            return Calculs.division_precise(self,1,Calculs.exposant(self,nb,-expo))
+            return self.division_precise(1,self.exposant(nb,-expo))
         res = 1
         for _ in range(expo):
             res = res * nb
@@ -119,7 +121,7 @@ class Calculs(Calculettefactice):
         while abs(terme) >= 0.001:
             somme += terme
             n += 1
-            terme = Calculs.division_precise(self,Calculs.exposant(self,x, int(n)), Calculs.factorielle(self,n))
+            terme = self.division_precise(self.exposant(x, int(n)), self.factorielle(n))
         return round(somme, 3)
     def multiplication_flottant(self, nb1, nb2):
         if nb1==0 or nb2==0:
@@ -148,7 +150,7 @@ class Calculs(Calculettefactice):
         entier_1 = int(part_ent_1 + part_dec_1)
         entier_2 = int(part_ent_2 + part_dec_2)
 
-        res_entier = Calculs.multiplication(self,entier_1, entier_2)
+        res_entier = self.multiplication(entier_1, entier_2)
 
         res_str = str(res_entier)
 
@@ -243,8 +245,6 @@ class Calculs(Calculettefactice):
         file_sortie = [] #Pour les nombres
         pile_operateurs = []
 
-        # 1. Découper l'expression en "jetons" (nombres ou opérateurs)
-        # Cette regex trouve les nombres (y compris flottants) OU les opérateurs/parenthèses
         regex_jetons = r'(\d+(\.\d*)?|facto|exp|[\+\-\*\/\^\(\)])'
         jetons = re.findall(regex_jetons, expression)
 
@@ -266,10 +266,11 @@ class Calculs(Calculettefactice):
                     file_sortie.append(pile_operateurs.pop())
             else:
                 op1 = jeton
-                # On vérifie les opérateurs (op2) déjà sur la pile
-                while pile_operateurs and self.priorites[pile_operateurs[-1]] > self.priorites[op1]:
-                    file_sortie.append(pile_operateurs.pop()) # on retire les operateurs prioritaires
-
+                while (pile_operateurs and pile_operateurs[-1] != '(' and
+                (self.priorites[pile_operateurs[-1]] > self.priorites[op1] or
+                (self.priorites[pile_operateurs[-1]] == self.priorites[op1] and
+                self.associativite[op1] == 'Gauche'))):
+                    file_sortie.append(pile_operateurs.pop())
                 pile_operateurs.append(op1)
 
         while pile_operateurs:
@@ -288,29 +289,31 @@ class Calculs(Calculettefactice):
                 pile_calcul.append(jeton)
 
             else:
-                nb2 = pile_calcul.pop()
-                nb1 = pile_calcul.pop()
-
                 res = 0.0
+
                 if jeton in ('facto', 'exp'):
                     nb1 = pile_calcul.pop()
+
                     if jeton == 'facto':
                         res = self.factorielle(int(nb1))
                     else:
                         res = self.exp_e(nb1)
-                if jeton == '+':
-                    res = nb1 + nb2
-                elif jeton == '-':
-                    res = nb1 - nb2
-                elif jeton == '*':
-                    res = self.multiplication_flottant(nb1, nb2)
-                elif jeton == '/':
-                    res = self.division_precise(nb1, nb2)
-                elif jeton == '^':
-                    res = self.exposant(nb1, int(nb2))
 
+                else:
+                    nb2 = pile_calcul.pop()
+                    nb1 = pile_calcul.pop()
+
+                    if jeton == '+':
+                        res = nb1 + nb2
+                    elif jeton == '-':
+                        res = nb1 - nb2
+                    elif jeton == '*':
+                        res = self.multiplication_flottant(nb1, nb2)
+                    elif jeton == '/':
+                        res = self.division_precise(nb1, nb2)
+                    elif jeton == '^':
+                        res = self.exposant(nb1, int(nb2))
                 pile_calcul.append(res)
-
         return pile_calcul.pop()
 
     def cerveau(self, expression):
@@ -448,9 +451,12 @@ def test():
     c.cerveau("10 - 4 + 2")  # Doit être (10-4)+2, pas 10-(4+2)
 
     # Test 8: Division par zéro
-    print("Test 9.8 (Attendu: ERREUR)")
-    c.cerveau("5 / (4 - 4)")
-
+    try:
+        print("Test 9.8 (Attendu: ERREUR)")
+        c.cerveau("5 / (4 - 4)")
+    except:
+        ValueError("Error: Division par zéro")
+        print("Error: Division par zéro")
     print("\n" + "=" * 30)
     print("Tests enfin terminés.")
 

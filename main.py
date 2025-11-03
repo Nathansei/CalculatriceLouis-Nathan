@@ -367,8 +367,8 @@ def test():
     print(f"  fibo(10) = {c.fibo(10)} (Attendu: 55)")
     try:
         c.fibo(-1)
-    except ValueError as e:
-        print(f"  fibo(-1) = {e} (Attendu: ValueError)")
+    except ValueError:
+        print("La suite de Fibonacci est défini sur les entiers naturels")
 
     # --- Test 5: exposant ---
     print("\n" + "="*30)
@@ -381,9 +381,9 @@ def test():
     print(f"  -2^3  = {c.exposant(-2, 3)} (Attendu: -8)")
     print(f"  -2^2  = {c.exposant(-2, 2)} (Attendu: 4)")
     try:
-        c.exposant(2, -1)
-    except ValueError as e:
-        print(f"  2^-1  = {e} (Attendu: ValueError)")
+        c.exposant(2, -1.2)
+    except ValueError :
+        print(("exposant: un exposant doit etre un entier"))
 
     # --- Test 6: exp_e ---
     print("\n" + "="*30)
@@ -430,7 +430,6 @@ def test():
     c.cerveau("(5 + 3) * 2 ^ 2")
 
     # Test 3: Fonction, Addition et Division
-    # Note : Le résultat exact dépend de votre approx. de exp_e
     print("Test 9.3 (Attendu: ~2.5)")
     c.cerveau("(exp(1) + 2.282) / 2")
 
@@ -446,9 +445,9 @@ def test():
     print("Test 9.6 (Attendu: 12)")
     c.cerveau("facto(1 + 4) / 10")
 
-    # Test 7: Associativité à gauche (test critique)
+    # Test 7: Associativité à gauche
     print("Test 9.7 (Attendu: 8)")
-    c.cerveau("10 - 4 + 2")  # Doit être (10-4)+2, pas 10-(4+2)
+    c.cerveau("10 - 4 + 2")
 
     # Test 8: Division par zéro
     try:

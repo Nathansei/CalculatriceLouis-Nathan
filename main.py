@@ -320,6 +320,7 @@ class Calculs(Calculettefactice):
         npi = self.conversion(expression)
         resultat = self.calcul_en_npi(npi)
         print(f"___{expression} = {resultat}")
+        return resultat
 
 def test():
 

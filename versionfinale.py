@@ -17,11 +17,11 @@ class Calc:
         for i in range(4):
             for j in range(5):
                 if self.calc[j][i] == "expo(":
-                    g.afficherTexte("e", 195 + 130 * i, 360 + 130 * j, "green", 60)
+                    g.afficherTexte("e", 195 + 130 * i, 360 + 130 * j, "#f8c007", 60)
                 elif self.calc[j][i] == "facto(":
-                    g.afficherTexte("!", 195 + 130 * i, 360 + 130 * j, "green", 60)
+                    g.afficherTexte("!", 195 + 130 * i, 360 + 130 * j, "#f8c007", 60)
                 elif self.calc[j][i] != "expo(" and "facto(":
-                    g.afficherTexte(self.calc[j][i],195 + 130 * i, 360 + 130 * j,"green",60)
+                    g.afficherTexte(self.calc[j][i],195 + 130 * i, 360 + 130 * j,"#f8c007",60)
         self.selection()
     def selection(self):
         l = []
@@ -38,7 +38,10 @@ class Calc:
                             for t in range(len(l)):
                                 result+=str(l[t])
                             l = []
-                            valeur = c.cerveau(result)
+                            try:
+                                valeur = c.cerveau(result)
+                            except:
+                                valeur = "Error"
                             if isinstance(valeur, float) and valeur.is_integer():
                                 valeur = int(valeur)
                             l.extend(str(valeur))
@@ -53,8 +56,12 @@ class Calc:
                             except KeyError:
                                 pass
                         for i, lettre in enumerate(l):
+                            if lettre == "facto(":
+                                lettre = "f("
+                            if lettre == "expo(":
+                                lettre = "e("
                             objets_lettres.append(
-                                g.afficherTexte(lettre, 235 + i * 35, 200, "green", 60)
+                                g.afficherTexte(lettre, 235 + i * 40, 200, "#f8c007", 60)
                             )
 
 import math
